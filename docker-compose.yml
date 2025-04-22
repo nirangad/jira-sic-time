@@ -1,18 +1,33 @@
+name: jira-timesheet
 version: '3.8'
 
 services:
-  jira-timesheet:
-    build: .
+  backend:
+    build:
+      context: ./jira-timesheet-api
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
-      - VITE_API_KEY=${VITE_API_KEY}
-      - VITE_APP_NAME=${VITE_APP_NAME:-Jira Timesheet}
-      - VITE_APP_ENV=${VITE_APP_ENV:-development}
-      - VITE_JIRA_HOST=${VITE_JIRA_HOST}
-      - VITE_JIRA_EMAIL=${VITE_JIRA_EMAIL}
-      - VITE_JIRA_API_TOKEN=${VITE_JIRA_API_TOKEN}
-      - VITE_JIRA_PROJECT_KEY=${VITE_JIRA_PROJECT_KEY}
+      - NODE_ENV=production
+    networks:
+      - jira-network
     volumes:
-      - ./config:/app/config 
+      - ./jira-timesheet-api/config/.env.example:/app/.env
+
+  frontend:
+    build:
+      context: ./jira-timesheet-client
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - jira-network
+    depends_on:
+      - backend
+
+networks:
+  jira-network:
+    driver: bridge 
