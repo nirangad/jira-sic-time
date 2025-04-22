@@ -14,12 +14,12 @@ This project combines the Jira Timesheet API (NestJS) and Client (React) applica
 
 ## Configuration
 
-1. Edit the `config/.env.example` file with your specific configuration:
+1. Edit the `jira-timesheet-api/config/.env.example` file with your specific configuration:
    - JIRA credentials
    - API settings
    - Application settings
 
-   ⚠️ **Important**: You must configure all required environment variables in the `config/.env.example` file before building the Docker images. The application will not function correctly without proper configuration.
+   ⚠️ **Important**: You must configure all required environment variables in the `jira-timesheet-api/config/.env.example` file before building the Docker images. The application will not function correctly without proper configuration.
 
 ## Running the Application
 
