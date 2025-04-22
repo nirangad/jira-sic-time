@@ -25,10 +25,10 @@ This project combines the Jira Timesheet API (NestJS) and Client (React) applica
 
 1. Build and start the container:
    ```bash
-   docker-compose up --build
+   docker-compose -p jira-timesheet up --build -d
    ```
 
-2. The application will be available at `http://localhost:3000`
+2. The application will be available at `http://localhost:4200`
 
 ## Environment Variables
 
