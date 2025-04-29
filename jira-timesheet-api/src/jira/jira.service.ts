@@ -47,9 +47,9 @@ export class JiraService implements OnModuleInit {
 
   private validateEnvironment() {
     const requiredEnvVars = {
-      VITE_JIRA_HOST: process.env.VITE_JIRA_HOST,
-      VITE_JIRA_EMAIL: process.env.VITE_JIRA_EMAIL,
-      VITE_JIRA_API_TOKEN: process.env.VITE_JIRA_API_TOKEN,
+      JIRA_HOST: process.env.JIRA_HOST,
+      JIRA_EMAIL: process.env.JIRA_EMAIL,
+      JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
     };
 
     const missingVars = Object.entries(requiredEnvVars)
@@ -62,9 +62,9 @@ export class JiraService implements OnModuleInit {
       );
     }
 
-    this.jiraHost = requiredEnvVars.VITE_JIRA_HOST as string;
-    this.jiraEmail = requiredEnvVars.VITE_JIRA_EMAIL as string;
-    this.jiraApiToken = requiredEnvVars.VITE_JIRA_API_TOKEN as string;
+    this.jiraHost = requiredEnvVars.JIRA_HOST as string;
+    this.jiraEmail = requiredEnvVars.JIRA_EMAIL as string;
+    this.jiraApiToken = requiredEnvVars.JIRA_API_TOKEN as string;
   }
 
   private getAuthHeader(): string {
@@ -104,13 +104,16 @@ export class JiraService implements OnModuleInit {
   async getDailyWorklogsForCurrentMonth(): Promise<DailyWorklogsResponse> {
     try {
       const issues = await this.fetchJiraData();
-      
+      console.table(issues);
+
+
       // Create a map to store worklogs by date
       const dailyWorklogsMap: { [key: string]: DailyWorklog } = {};
       
       // Process each issue and its worklogs
       issues.forEach((issue: any) => {
         const worklogs = issue.fields.worklog?.worklogs || [];
+        console.log("Work Logs", worklogs.length, issue.fields.key);
         
         worklogs.forEach((worklog: any) => {
           const date = worklog.started.split('T')[0]; // Use started date for grouping
