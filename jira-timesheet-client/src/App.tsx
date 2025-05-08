@@ -4,7 +4,7 @@ import './App.css'
 function App() {
   return (
     <div className="app">
-      <h1>JIRA Timesheet</h1>
+      <h1><span>Poor Man's</span> JIRA Timesheet</h1>
       <TimeSheet />
     </div>
   )
