@@ -74,8 +74,12 @@ export class JiraService implements OnModuleInit {
     return `Basic ${auth}`;
   }
 
-  private async fetchJiraData() {
-    const jql = 'worklogAuthor = currentUser() AND worklogDate >= startOfMonth() AND worklogDate <= endOfMonth()';
+  private async fetchJiraData(year: number, month: number) {
+    // Create date objects for start and end of month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // Last day of the month
+
+    const jql = `worklogAuthor = currentUser() AND worklogDate >= "${startDate.toISOString().split('T')[0]}" AND worklogDate <= "${endDate.toISOString().split('T')[0]}"`;
     
     const response = await axios.get(
       `https://${this.jiraHost}/rest/api/3/search`,
@@ -101,11 +105,10 @@ export class JiraService implements OnModuleInit {
     return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
   }
 
-  async getDailyWorklogsForCurrentMonth(): Promise<DailyWorklogsResponse> {
+  async getWorklogsForMonth(year: number, month: number): Promise<DailyWorklogsResponse> {
     try {
-      const issues = await this.fetchJiraData();
+      const issues = await this.fetchJiraData(year, month);
       console.table(issues);
-
 
       // Create a map to store worklogs by date
       const dailyWorklogsMap: { [key: string]: DailyWorklog } = {};
@@ -116,35 +119,39 @@ export class JiraService implements OnModuleInit {
         console.log("Work Logs", worklogs.length, issue.fields.key);
         
         worklogs.forEach((worklog: any) => {
-          const date = worklog.started.split('T')[0]; // Use started date for grouping
+          const date = worklog.started.split('T')[0];
+          const worklogDate = new Date(date);
           
-          if (!dailyWorklogsMap[date]) {
-            dailyWorklogsMap[date] = {
-              date,
-              totalTimeSpentSeconds: 0,
-              totalTimeSpent: '0h',
-              worklogs: [],
+          // Only include worklogs that fall within the specified month
+          if (worklogDate.getFullYear() === year && worklogDate.getMonth() + 1 === month) {
+            if (!dailyWorklogsMap[date]) {
+              dailyWorklogsMap[date] = {
+                date,
+                totalTimeSpentSeconds: 0,
+                totalTimeSpent: '0h',
+                worklogs: [],
+              };
+            }
+            
+            const worklogEntry: WorklogEntry = {
+              key: issue.key,
+              id: worklog.id,
+              issueId: issue.id,
+              summary: issue.fields.summary,
+              self: worklog.self,
+              author: worklog.author,
+              updateAuthor: worklog.updateAuthor,
+              created: worklog.created,
+              updated: worklog.updated,
+              started: worklog.started,
+              timeSpent: worklog.timeSpent,
+              timeSpentSeconds: worklog.timeSpentSeconds,
             };
+            
+            dailyWorklogsMap[date].worklogs.push(worklogEntry);
+            dailyWorklogsMap[date].totalTimeSpentSeconds += worklog.timeSpentSeconds;
+            dailyWorklogsMap[date].totalTimeSpent = this.formatTimeSpent(dailyWorklogsMap[date].totalTimeSpentSeconds);
           }
-          
-          const worklogEntry: WorklogEntry = {
-            key: issue.key,
-            id: worklog.id,
-            issueId: issue.id,
-            summary: issue.fields.summary,
-            self: worklog.self,
-            author: worklog.author,
-            updateAuthor: worklog.updateAuthor,
-            created: worklog.created,
-            updated: worklog.updated,
-            started: worklog.started,
-            timeSpent: worklog.timeSpent,
-            timeSpentSeconds: worklog.timeSpentSeconds,
-          };
-          
-          dailyWorklogsMap[date].worklogs.push(worklogEntry);
-          dailyWorklogsMap[date].totalTimeSpentSeconds += worklog.timeSpentSeconds;
-          dailyWorklogsMap[date].totalTimeSpent = this.formatTimeSpent(dailyWorklogsMap[date].totalTimeSpentSeconds);
         });
       });
 
@@ -159,5 +166,10 @@ export class JiraService implements OnModuleInit {
       console.error('Error fetching JIRA daily worklogs:', error);
       throw error;
     }
+  }
+
+  async getDailyWorklogsForCurrentMonth(): Promise<DailyWorklogsResponse> {
+    const now = new Date();
+    return this.getWorklogsForMonth(now.getFullYear(), now.getMonth() + 1);
   }
 } 

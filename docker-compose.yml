@@ -1,28 +1,26 @@
 name: jira-timesheet
-version: '3.8'
-
 services:
   backend:
     build:
       context: ./jira-timesheet-api
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
     environment:
       - NODE_ENV=production
+    env_file:
+      - ./jira-timesheet-api/.env
     networks:
       - jira-network
-    volumes:
-      - ./jira-timesheet-api/config/.env.example:/app/.env
 
   frontend:
     build:
       context: ./jira-timesheet-client
       dockerfile: Dockerfile
     ports:
-      - "4200:4200"
+      - "4234:4234"
     environment:
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_URL=/api
+      - NGINX_PORT=4234
+      - BACKEND_URL=http://backend:3000
     networks:
       - jira-network
     depends_on:

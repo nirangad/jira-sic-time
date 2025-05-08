@@ -16,15 +16,25 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM python:3.11-alpine
+FROM nginx:alpine
 
-WORKDIR /app
+# Set default environment variables
+ENV NGINX_PORT=4234
+ENV BACKEND_URL=http://backend:3000
+
+WORKDIR /usr/share/nginx/html
+
+# Remove default nginx static assets
+RUN rm -rf ./*
 
 # Copy built files from builder stage
-COPY --from=builder /app/dist /app
+COPY --from=builder /app/dist .
 
-# Expose the port the app runs on
-EXPOSE 4200
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 
-# Start Python HTTP server
-CMD ["python3", "-m", "http.server", "4200", "--bind", "0.0.0.0"] 
+# Use environment variable substitution and start nginx
+CMD ["/bin/sh", "-c", "envsubst '$NGINX_PORT $BACKEND_URL' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+
+# Expose the port
+EXPOSE 4234 

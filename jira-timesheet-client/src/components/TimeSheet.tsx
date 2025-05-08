@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WorkLogResponse } from '../types/WorkLog';
+import { fetchWorkLogsByMonth } from '../services/jiraService';
 import './TimeSheet.css';
 
 interface TaskSummary {
@@ -20,25 +21,49 @@ const TimeSheet = () => {
   const [workLogs, setWorkLogs] = useState<FormattedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = 0; i < 5; i++) {
+      const year = currentYear - i;
+      years.push(year);
+    }
+    return years;
+  };
+
+  const months = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' }
+  ];
+
+  const loadWorkLogs = async (year: number, month: number) => {
+    setLoading(true);
+    try {
+      const data = await fetchWorkLogsByMonth(year, month);
+      const formattedData = transformData(data);
+      setWorkLogs(formattedData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchWorkLogs = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/jira/worklogs/current-month/daily');
-        if (!response.ok) {
-          throw new Error('Failed to fetch work logs');
-        }
-        const data: WorkLogResponse = await response.json();
-        const formattedData = transformData(data);
-        setWorkLogs(formattedData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWorkLogs();
+    loadWorkLogs(selectedYear, selectedMonth);
   }, []);
 
   const transformData = (data: WorkLogResponse): FormattedData => {
@@ -99,6 +124,32 @@ const TimeSheet = () => {
 
   return (
     <div className="timesheet-container">
+      <div className="timesheet-filters">
+        <select 
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+          className="timesheet-select"
+        >
+          {generateYearOptions().map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+        <select 
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          className="timesheet-select"
+        >
+          {months.map(month => (
+            <option key={month.value} value={month.value}>{month.label}</option>
+          ))}
+        </select>
+        <button 
+          onClick={() => loadWorkLogs(selectedYear, selectedMonth)}
+          className="timesheet-button"
+        >
+          Load Timesheet
+        </button>
+      </div>
       <div className="timesheet-header">
         <h2>JIRA Tasks</h2>
         <h2>{monthYear}</h2>
